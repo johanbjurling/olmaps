@@ -58,78 +58,11 @@ export default function MapLayer() {
 
     map.fitBounds(mapBounds);
 
-    map.on("click", function (e: L.LeafletMouseEvent) {
-      CompetitionManager.instance.addControl({
-        mapPoint: new MapPoint(e.latlng),
-      });
-    });
-
-    /*const circleGroup = L.layerGroup().addTo(map);
-
-    const lineGroup = L.layerGroup().addTo(map);
-
-    const updateLines = () => {
-      lineGroup.clearLayers();
-
-      const circles = circleGroup.getLayers() as L.Circle[];
-
-      for (let i = 0; i < circles.length - 1; i++) {
-        const startCenter = circles[i].getLatLng();
-        const endCenter = circles[i + 1].getLatLng();
-        const radius = circles[i].getRadius();
-
-        const startPoint = getPointOnEdge(startCenter, endCenter, radius + 25);
-
-        const endPoint = getPointOnEdge(endCenter, startCenter, radius + 25);
-
-        L.polyline([startPoint, endPoint], {
-          color: COURSE_COLOR,
-          weight: getLineWidth(map.getZoom()),
-        }).addTo(lineGroup);
-      }
-    };
-
-    map.on("click", (e) => {
-      // e.latlng innehåller koordinaterna där du klickade
-      const { lat, lng } = e.latlng;
-
-      // Skapa den nya cirkeln
-      const circle = L.circle([lat, lng], {
-        color: COURSE_COLOR, // En fin grön färg (Tailwind green-500)
-        fillColor: COURSE_COLOR,
-        fillOpacity: 0,
-        radius: RING_RADIUS_METERS, // Justera radien efter din kartas skala
-        weight: getLineWidth(map.getZoom()),
-        draggable: true,
-      }).addTo(circleGroup);
-
-      circle.on("drag", () => {
-        updateLines();
-      });
-
-      updateLines();
-    });
-
-    map.on("zoomend", () => {
-      const currentZoom = map.getZoom();
-
-      circleGroup.eachLayer((layer) => {
-        // Eftersom vi bara har cirklar i denna grupp behöver vi inte kolla "instanceof"
-        const circle = layer as L.Circle;
-        circle.setStyle({
-          weight: getLineWidth(currentZoom),
-        });
-      });
-
-      updateLines();
-    });*/
-
     const mapManager = new MapManager(map);
 
     const subMapEvents = mapManager.mapEventSubject.subscribe((mapEvent) => {
       switch (mapEvent.type) {
         case "map-point-updated":
-          console.log("map-point-updated received in MapLayer");
           CompetitionManager.instance.mapPointUpdated(mapEvent.point);
           break;
       }

@@ -2,6 +2,8 @@ import L from "leaflet";
 import { Competition } from "./competition";
 import MapPoint from "./map-point";
 import { Subject } from "rxjs/internal/Subject";
+import UIManager from "./ui-manager";
+import CompetitionManager from "./competition-manager";
 
 const RING_RADIUS_METERS = 37.5;
 const COURSE_COLOR = "rgb(203, 0, 136)";
@@ -26,26 +28,65 @@ export type MapPointUpdateEvent = {
   point: MapPoint;
 };
 
-export type MapEvent = MapPointUpdateEvent;
+export type CurrentMapPointChanged = {
+  type: "current-map-point-changed";
+  point: MapPoint | null;
+};
+
+export type MapEvent = MapPointUpdateEvent | CurrentMapPointChanged;
 
 class MapManager {
   private _map: L.Map;
   private _controlPointsLayer: L.LayerGroup;
   private _lineLayer: L.LayerGroup;
   private _mapEventSubject: Subject<MapEvent>;
+  private _activeCircle: L.Circle | null = null;
+  private _currentMapPointId: string | null = null;
 
   constructor(map: L.Map) {
     this._map = map;
     this._controlPointsLayer = L.layerGroup().addTo(this._map);
     this._lineLayer = L.layerGroup().addTo(this._map);
     this._mapEventSubject = new Subject<MapEvent>();
+
     this._map.on("zoomend", () => {
       this._onZoomEnd();
+    });
+
+    this._map.on("click", (e: L.LeafletMouseEvent) => {
+      this._onMapClick(e);
+    });
+
+    UIManager.instance.currentMapPointIdSubject.subscribe((pointId) => {
+      this._currentMapPointId = pointId;
+      this._updateActiveCircle();
     });
   }
 
   public get mapEventSubject(): Subject<MapEvent> {
     return this._mapEventSubject;
+  }
+
+  private _onMapClick(e: L.LeafletMouseEvent) {
+    switch (UIManager.instance.inputModeSubject.value) {
+      case "ADD_CONTROL_POINT":
+        this._addControlPointAt(e);
+        break;
+      case "NONE":
+        UIManager.instance.setCurrentMapPointId(null);
+        break;
+      default:
+        break;
+    }
+  }
+
+  private _addControlPointAt(e: L.LeafletMouseEvent) {
+    CompetitionManager.instance.addControl({
+      mapPoint: new MapPoint({
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+      }),
+    });
   }
 
   private _onZoomEnd() {
@@ -66,6 +107,8 @@ class MapManager {
         weight: getLineWidth(currentZoom),
       });
     });
+
+    this._updateActiveCircle();
   }
 
   private _updateLines() {
@@ -108,13 +151,9 @@ class MapManager {
       const startPoint = getPointOnEdge(
         dl.start,
         dl.end,
-        RING_RADIUS_METERS + 25
+        RING_RADIUS_METERS * 2
       );
-      const endPoint = getPointOnEdge(
-        dl.end,
-        dl.start,
-        RING_RADIUS_METERS + 25
-      );
+      const endPoint = getPointOnEdge(dl.end, dl.start, RING_RADIUS_METERS * 2);
       const newLatLngs = [startPoint, endPoint];
 
       if (existingLine) {
@@ -178,8 +217,17 @@ class MapManager {
         circle.pointId = point.id;
         circle.addTo(this._controlPointsLayer);
 
+        circle.on("click", (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e);
+          UIManager.instance.setCurrentMapPointId(point.id);
+        });
+
         // Attach events
-        circle.on("drag", () => this._updateLines());
+        circle.on("drag", () => {
+          this._updateLines();
+          UIManager.instance.setCurrentMapPointId(point.id);
+          this._updateActiveCircle();
+        });
 
         circle.on("dragend", (e: L.LeafletEvent) => {
           const target = e.target as L.Circle;
@@ -192,6 +240,49 @@ class MapManager {
         });
       }
     });
+  }
+
+  private _updateActiveCircle() {
+    const points = this._controlPointsLayer.getLayers() as L.Circle[];
+    const point = points.find((p) => p.pointId === this._currentMapPointId);
+
+    if (point) {
+      const pos = point.getLatLng();
+
+      const INNER_RADIUS = RING_RADIUS_METERS;
+      const OUTER_RADIUS = INNER_RADIUS * 2;
+      const HALO_WIDTH_METERS = OUTER_RADIUS - INNER_RADIUS;
+
+      // We place the circle at the midpoint of the halo
+      const midRadiusMeters = INNER_RADIUS + HALO_WIDTH_METERS / 2;
+
+      // Calculate the thickness in pixels for the current zoom
+      const weightInPixels = this._metersToPixels(HALO_WIDTH_METERS);
+
+      if (!this._activeCircle) {
+        this._activeCircle = L.circle(pos, {
+          radius: midRadiusMeters,
+          color: COURSE_COLOR,
+          opacity: 0.3, // Slightly more visible halo
+          fill: false, // Important: no fill, just a thick border
+          weight: weightInPixels,
+          interactive: false,
+        }).addTo(this._map);
+
+        this._activeCircle.bringToBack();
+      } else {
+        this._activeCircle.setLatLng(pos);
+        this._activeCircle.setRadius(midRadiusMeters);
+        this._activeCircle.setStyle({ weight: weightInPixels });
+      }
+    } else {
+      this._activeCircle?.remove();
+      this._activeCircle = null;
+    }
+  }
+
+  private _metersToPixels(meters: number): number {
+    return meters * this._map.options.crs!.scale(this._map.getZoom());
   }
 
   public update(competition: Competition) {
