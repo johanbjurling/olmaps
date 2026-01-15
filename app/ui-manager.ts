@@ -6,30 +6,26 @@ type InputMode =
   | "ADD_FINISH_POINT"
   | "NONE";
 
+export type UIState = {
+  currentMapPointId: string | null;
+  currentCourseId: string | null;
+  inputMode: InputMode;
+};
+
 class UIManager {
   private static _instance: UIManager;
-  private _currentMapPointIdSubject: BehaviorSubject<string | null>;
-  private _currentCourseIdSubject: BehaviorSubject<string | null>;
-  private _inputModeSubject: BehaviorSubject<InputMode>;
+  private _uiStateSubject: BehaviorSubject<UIState>;
 
   constructor() {
-    this._currentMapPointIdSubject = new BehaviorSubject<string | null>(null);
-    this._currentCourseIdSubject = new BehaviorSubject<string | null>(null);
-    this._inputModeSubject = new BehaviorSubject<InputMode>(
-      "ADD_CONTROL_POINT"
-    );
+    this._uiStateSubject = new BehaviorSubject<UIState>({
+      currentMapPointId: null,
+      currentCourseId: null,
+      inputMode: "ADD_CONTROL_POINT",
+    });
   }
 
-  get currentMapPointIdSubject(): BehaviorSubject<string | null> {
-    return this._currentMapPointIdSubject;
-  }
-
-  get currentCourseIdSubject(): BehaviorSubject<string | null> {
-    return this._currentCourseIdSubject;
-  }
-
-  get inputModeSubject(): BehaviorSubject<InputMode> {
-    return this._inputModeSubject;
+  get uiStateSubject(): BehaviorSubject<UIState> {
+    return this._uiStateSubject;
   }
 
   public static get instance(): UIManager {
@@ -40,15 +36,24 @@ class UIManager {
   }
 
   setCurrentMapPointId(pointId: string | null) {
-    this._currentMapPointIdSubject.next(pointId);
+    this._uiStateSubject.next({
+      ...this._uiStateSubject.value,
+      currentMapPointId: pointId,
+    });
   }
 
   setCurrentCourseId(courseId: string | null) {
-    this._currentCourseIdSubject.next(courseId);
+    this._uiStateSubject.next({
+      ...this._uiStateSubject.value,
+      currentCourseId: courseId,
+    });
   }
 
   setInputMode(inputMode: InputMode) {
-    this._inputModeSubject.next(inputMode);
+    this._uiStateSubject.next({
+      ...this._uiStateSubject.value,
+      inputMode: inputMode,
+    });
   }
 }
 

@@ -1,9 +1,9 @@
 import L from "leaflet";
 import Competition from "./competition";
 import MapPoint from "./map-point";
-import UIManager from "./ui-manager";
+import UIManager, { UIState } from "./ui-manager";
 import CompetitionManager from "./competition-manager";
-import { Subscription } from "rxjs";
+import { combineLatest, Subscription } from "rxjs";
 
 const RING_RADIUS_METERS = 37.5;
 const COURSE_COLOR = "rgb(203, 0, 136)";
@@ -28,7 +28,6 @@ class MapManager {
   private _controlPointsLayer: L.LayerGroup;
   private _lineLayer: L.LayerGroup;
   private _activeCircle: L.Circle | null = null;
-  private _currentMapPointId: string | null = null;
   private _subscriptions: Subscription[] = [];
 
   constructor(map: L.Map) {
@@ -45,15 +44,11 @@ class MapManager {
     });
 
     this._subscriptions.push(
-      UIManager.instance.currentMapPointIdSubject.subscribe((pointId) => {
-        this._currentMapPointId = pointId;
-        this._updateActiveCircle();
-      })
-    );
-
-    this._subscriptions.push(
-      CompetitionManager.instance.subject.subscribe((competition) => {
-        this._update(competition);
+      combineLatest([
+        UIManager.instance.uiStateSubject,
+        CompetitionManager.instance.subject,
+      ]).subscribe(([uiState, competition]) => {
+        this._update({ uiState, competition });
       })
     );
   }
@@ -63,7 +58,7 @@ class MapManager {
   }
 
   private _onMapClick(e: L.LeafletMouseEvent) {
-    switch (UIManager.instance.inputModeSubject.value) {
+    switch (UIManager.instance.uiStateSubject.value.inputMode) {
       case "ADD_CONTROL_POINT":
         this._addControlPointAt(e);
         break;
@@ -76,12 +71,16 @@ class MapManager {
   }
 
   private _addControlPointAt(e: L.LeafletMouseEvent) {
-    CompetitionManager.instance.addControl({
-      mapPoint: new MapPoint({
-        lat: e.latlng.lat,
-        lng: e.latlng.lng,
-      }),
+    const mapPoint = new MapPoint({
+      lat: e.latlng.lat,
+      lng: e.latlng.lng,
     });
+
+    CompetitionManager.instance.addControl({
+      mapPoint,
+    });
+
+    UIManager.instance.setCurrentMapPointId(mapPoint.id);
   }
 
   private _onZoomEnd() {
@@ -103,10 +102,12 @@ class MapManager {
       });
     });
 
-    this._updateActiveCircle();
+    this._updateActiveCircle(
+      UIManager.instance.uiStateSubject.value.currentMapPointId
+    );
   }
 
-  private _updateLines() {
+  private _updateLines(currentCourseId?: string | null) {
     const controlPoints = this._controlPointsLayer.getLayers() as L.Circle[];
     const lines = this._lineLayer.getLayers() as L.Polyline[];
 
@@ -117,18 +118,20 @@ class MapManager {
       end: L.LatLng;
     }[] = [];
 
-    for (let i = 0; i < controlPoints.length - 1; i++) {
-      const startPoint = controlPoints[i];
-      const endPoint = controlPoints[i + 1];
+    if (currentCourseId) {
+      for (let i = 0; i < controlPoints.length - 1; i++) {
+        const startPoint = controlPoints[i];
+        const endPoint = controlPoints[i + 1];
 
-      const startId = startPoint.pointId;
-      const endId = endPoint.pointId;
+        const startId = startPoint.pointId;
+        const endId = endPoint.pointId;
 
-      desiredLines.push({
-        id: `${startId}-${endId}`,
-        start: startPoint.getLatLng(),
-        end: endPoint.getLatLng(),
-      });
+        desiredLines.push({
+          id: `${startId}-${endId}`,
+          start: startPoint.getLatLng(),
+          end: endPoint.getLatLng(),
+        });
+      }
     }
 
     // 2. Remove lines that are no longer desired
@@ -219,9 +222,11 @@ class MapManager {
 
         // Attach events
         circle.on("drag", () => {
-          this._updateLines();
+          this._updateLines(
+            UIManager.instance.uiStateSubject.value.currentCourseId
+          );
           UIManager.instance.setCurrentMapPointId(point.id);
-          this._updateActiveCircle();
+          this._updateActiveCircle(point.id);
         });
 
         circle.on("dragend", (e: L.LeafletEvent) => {
@@ -236,9 +241,9 @@ class MapManager {
     });
   }
 
-  private _updateActiveCircle() {
+  private _updateActiveCircle(currentMapPointId: string | null) {
     const points = this._controlPointsLayer.getLayers() as L.Circle[];
-    const point = points.find((p) => p.pointId === this._currentMapPointId);
+    const point = points.find((p) => p.pointId === currentMapPointId);
 
     if (point) {
       const pos = point.getLatLng();
@@ -279,9 +284,16 @@ class MapManager {
     return meters * this._map.options.crs!.scale(this._map.getZoom());
   }
 
-  private _update(competition: Competition) {
+  private _update({
+    competition,
+    uiState,
+  }: {
+    competition: Competition;
+    uiState: UIState;
+  }) {
     this._updateControlPoints(competition.mapPoints);
-    this._updateLines();
+    this._updateLines(uiState.currentCourseId);
+    this._updateActiveCircle(uiState.currentMapPointId);
   }
 }
 

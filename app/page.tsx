@@ -6,9 +6,7 @@ import UIManager from "./ui-manager";
 import { useBehaviorSubject } from "./useBehaviorSubject";
 
 export default function Home() {
-  const currentMapPointId = useBehaviorSubject(
-    UIManager.instance.currentMapPointIdSubject
-  );
+  const uiState = useBehaviorSubject(UIManager.instance.uiStateSubject);
 
   return (
     <div>
@@ -19,11 +17,11 @@ export default function Home() {
         <MapLayer />
       </div>
       <div id="right-pane" className="absolute right-0 w-[20%] h-full">
-        {currentMapPointId ? (
+        {uiState.currentMapPointId ? (
           <div className="p-4">
             <h2 className="text-lg font-bold mb-4">Map Point Details</h2>
             <p>
-              <strong>ID:</strong> {currentMapPointId}
+              <strong>ID:</strong> {uiState.currentMapPointId}
             </p>
             {/*/<p>
               <strong>Latitude:</strong> {currentMapPoint.lat.toFixed(6)}
