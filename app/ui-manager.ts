@@ -1,5 +1,4 @@
 import { BehaviorSubject } from "rxjs";
-import { point } from "leaflet";
 
 type InputMode =
   | "ADD_CONTROL_POINT"
@@ -10,10 +9,12 @@ type InputMode =
 class UIManager {
   private static _instance: UIManager;
   private _currentMapPointIdSubject: BehaviorSubject<string | null>;
+  private _currentCourseIdSubject: BehaviorSubject<string | null>;
   private _inputModeSubject: BehaviorSubject<InputMode>;
 
   constructor() {
     this._currentMapPointIdSubject = new BehaviorSubject<string | null>(null);
+    this._currentCourseIdSubject = new BehaviorSubject<string | null>(null);
     this._inputModeSubject = new BehaviorSubject<InputMode>(
       "ADD_CONTROL_POINT"
     );
@@ -21,6 +22,10 @@ class UIManager {
 
   get currentMapPointIdSubject(): BehaviorSubject<string | null> {
     return this._currentMapPointIdSubject;
+  }
+
+  get currentCourseIdSubject(): BehaviorSubject<string | null> {
+    return this._currentCourseIdSubject;
   }
 
   get inputModeSubject(): BehaviorSubject<InputMode> {
@@ -36,6 +41,10 @@ class UIManager {
 
   setCurrentMapPointId(pointId: string | null) {
     this._currentMapPointIdSubject.next(pointId);
+  }
+
+  setCurrentCourseId(courseId: string | null) {
+    this._currentCourseIdSubject.next(courseId);
   }
 
   setInputMode(inputMode: InputMode) {

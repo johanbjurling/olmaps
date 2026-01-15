@@ -2,11 +2,9 @@
 
 import "leaflet/dist/leaflet.css";
 import "leaflet-path-drag";
-import L, { point } from "leaflet";
+import L from "leaflet";
 import { useEffect, useRef } from "react";
-import CompetitionManager from "./competition-manager";
-import MapPoint from "./map-point";
-import MapManager, { MapPointUpdateEvent } from "./map-manager";
+import MapManager from "./map-manager";
 
 export default function MapLayer() {
   const ref = useRef<HTMLDivElement>(null);
@@ -60,22 +58,9 @@ export default function MapLayer() {
 
     const mapManager = new MapManager(map);
 
-    const subMapEvents = mapManager.mapEventSubject.subscribe((mapEvent) => {
-      switch (mapEvent.type) {
-        case "map-point-updated":
-          CompetitionManager.instance.mapPointUpdated(mapEvent.point);
-          break;
-      }
-    });
-
-    const sub = CompetitionManager.instance.subject.subscribe((competition) => {
-      mapManager.update(competition);
-    });
-
     return () => {
-      subMapEvents.unsubscribe();
-      sub.unsubscribe();
       map.remove();
+      mapManager.dispose();
     };
   }, []);
 

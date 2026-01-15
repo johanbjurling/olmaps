@@ -1,13 +1,13 @@
 import { BehaviorSubject } from "rxjs";
-import { Competition } from "./competition";
 import MapPoint from "./map-point";
+import Competition from "./competition";
 
 class CompetitionManager {
   private static _instance: CompetitionManager;
   private _subject: BehaviorSubject<Competition>;
 
   constructor() {
-    this._subject = new BehaviorSubject<Competition>({ points: [] });
+    this._subject = new BehaviorSubject<Competition>(new Competition({}));
   }
 
   public static get instance(): CompetitionManager {
@@ -22,19 +22,11 @@ class CompetitionManager {
   }
 
   addControl({ mapPoint }: { mapPoint: MapPoint }) {
-    this._subject.next({
-      points: [...this._subject.value.points, mapPoint],
-    });
+    this._subject.next(this._subject.value.addMapPoint(mapPoint));
   }
 
-  mapPointUpdated(point: MapPoint) {
-    const points = this._subject.value.points.map((p) => {
-      if (p.id === point.id) {
-        return point;
-      }
-      return p;
-    });
-    this._subject.next({ points });
+  updateMapPoint(point: MapPoint) {
+    this._subject.next(this._subject.value.updateMapPoint(point));
   }
 }
 

@@ -1,9 +1,9 @@
 import L from "leaflet";
-import { Competition } from "./competition";
+import Competition from "./competition";
 import MapPoint from "./map-point";
-import { Subject } from "rxjs/internal/Subject";
 import UIManager from "./ui-manager";
 import CompetitionManager from "./competition-manager";
+import { Subscription } from "rxjs";
 
 const RING_RADIUS_METERS = 37.5;
 const COURSE_COLOR = "rgb(203, 0, 136)";
@@ -23,31 +23,18 @@ function getPointOnEdge(center: L.LatLng, target: L.LatLng, radius: number) {
   return L.latLng(newLat, newLng);
 }
 
-export type MapPointUpdateEvent = {
-  type: "map-point-updated";
-  point: MapPoint;
-};
-
-export type CurrentMapPointChanged = {
-  type: "current-map-point-changed";
-  point: MapPoint | null;
-};
-
-export type MapEvent = MapPointUpdateEvent | CurrentMapPointChanged;
-
 class MapManager {
   private _map: L.Map;
   private _controlPointsLayer: L.LayerGroup;
   private _lineLayer: L.LayerGroup;
-  private _mapEventSubject: Subject<MapEvent>;
   private _activeCircle: L.Circle | null = null;
   private _currentMapPointId: string | null = null;
+  private _subscriptions: Subscription[] = [];
 
   constructor(map: L.Map) {
     this._map = map;
     this._controlPointsLayer = L.layerGroup().addTo(this._map);
     this._lineLayer = L.layerGroup().addTo(this._map);
-    this._mapEventSubject = new Subject<MapEvent>();
 
     this._map.on("zoomend", () => {
       this._onZoomEnd();
@@ -57,14 +44,22 @@ class MapManager {
       this._onMapClick(e);
     });
 
-    UIManager.instance.currentMapPointIdSubject.subscribe((pointId) => {
-      this._currentMapPointId = pointId;
-      this._updateActiveCircle();
-    });
+    this._subscriptions.push(
+      UIManager.instance.currentMapPointIdSubject.subscribe((pointId) => {
+        this._currentMapPointId = pointId;
+        this._updateActiveCircle();
+      })
+    );
+
+    this._subscriptions.push(
+      CompetitionManager.instance.subject.subscribe((competition) => {
+        this._update(competition);
+      })
+    );
   }
 
-  public get mapEventSubject(): Subject<MapEvent> {
-    return this._mapEventSubject;
+  dispose() {
+    this._subscriptions.forEach((s) => s.unsubscribe());
   }
 
   private _onMapClick(e: L.LeafletMouseEvent) {
@@ -180,7 +175,7 @@ class MapManager {
     });
   }
 
-  private _updateControlPoints(controlPoints: MapPoint[]) {
+  private _updateControlPoints(controlPoints: readonly MapPoint[]) {
     const currentControlPoints =
       this._controlPointsLayer.getLayers() as L.Circle[];
 
@@ -233,10 +228,9 @@ class MapManager {
           const target = e.target as L.Circle;
           const newPos = target.getLatLng();
 
-          this._mapEventSubject.next({
-            type: "map-point-updated",
-            point: point.copy({ lat: newPos.lat, lng: newPos.lng }),
-          });
+          CompetitionManager.instance.updateMapPoint(
+            point.copy({ lat: newPos.lat, lng: newPos.lng })
+          );
         });
       }
     });
@@ -285,8 +279,8 @@ class MapManager {
     return meters * this._map.options.crs!.scale(this._map.getZoom());
   }
 
-  public update(competition: Competition) {
-    this._updateControlPoints(competition.points);
+  private _update(competition: Competition) {
+    this._updateControlPoints(competition.mapPoints);
     this._updateLines();
   }
 }
