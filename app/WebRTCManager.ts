@@ -9,9 +9,13 @@ class WebRTCManager {
   private constructor() {
     this._doc = new Y.Doc();
     this._provider = new WebrtcProvider(
-      "competition-room-unique-id",
+      "competition-room-unique-id-2",
       this._doc
     );
+  }
+
+  get doc(): Y.Doc {
+    return this._doc;
   }
 
   get provider(): WebrtcProvider {

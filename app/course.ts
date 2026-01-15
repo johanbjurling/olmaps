@@ -12,6 +12,13 @@ class Course {
   public copy({ pointIds }: { pointIds?: readonly string[] }): Course {
     return new Course({ id: this.id, pointIds: pointIds ?? this.pointIds });
   }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      pointIds: this.pointIds,
+    };
+  }
 }
 
 export default Course;

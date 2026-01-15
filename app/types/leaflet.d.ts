@@ -6,6 +6,7 @@ declare module "leaflet" {
   }
   interface Circle {
     pointId?: string;
+    dragging: any;
   }
   interface Polygon {
     pointId?: string;

@@ -7,6 +7,7 @@ import { MapContainer, TileLayer } from "react-leaflet";
 import RemotePresenceLayer from "./RemotePresenceLayer";
 import { MapController } from "./MapController";
 import { useMapConfig } from "./hooks/useMapConfig";
+import MapPointsLayer from "./MapPointsLayer";
 
 export function MapView() {
   const { crs, mapBounds, minZoom, maxZoom } = useMapConfig();
@@ -21,6 +22,7 @@ export function MapView() {
     >
       <TileLayer url="tiles/{z}/{x}/{y}.png" tms={true} bounds={mapBounds} />
       <MapController />
+      <MapPointsLayer />
       <RemotePresenceLayer />
     </MapContainer>
   );

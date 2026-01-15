@@ -4,9 +4,10 @@ import MapPoint from "./map-point";
 import Competition from "./competition";
 import Course from "./course";
 import { IndexeddbPersistence } from "y-indexeddb";
+import WebRTCManager from "./WebRTCManager";
 
 class CompetitionManager {
-  private _doc: Y.Doc;
+  private _doc: Y.Doc = WebRTCManager.instance.doc;
   private _yMapPoints: Y.Array<any>;
   private _yCourses: Y.Array<any>;
   private _undoManager: Y.UndoManager;
@@ -14,7 +15,6 @@ class CompetitionManager {
   private _subject: BehaviorSubject<Competition>;
 
   constructor() {
-    this._doc = new Y.Doc();
     this._yMapPoints = this._doc.getArray("mapPoints");
     this._yCourses = this._doc.getArray("courses");
 
@@ -91,9 +91,14 @@ class CompetitionManager {
   }
 
   private _syncYjsToRxJS() {
-    // Här konverterar vi tillbaka Yjs rådata till dina fina klasser
-    const mapPoints = this._yMapPoints.toArray().map((p) => new MapPoint(p));
-    const courses = this._yCourses.toArray().map((c) => new Course(c));
+    const mapPoints = this._yMapPoints.toArray().map((yPoint) => {
+      const rawData = yPoint.toJSON();
+      return new MapPoint(rawData);
+    });
+
+    const courses = this._yCourses.toArray().map((yCourse) => {
+      return new Course(yCourse.toJSON());
+    });
 
     const updatedCompetition = new Competition({
       mapPoints,

@@ -11,7 +11,7 @@ const RemotePresenceLayer = () => {
     <>
       {presences.map((user) => (
         <React.Fragment key={user.clientId}>
-          {/* RITA MUSPEKARE */}
+          {/* Draw mouse cursor */}
           {user.cursor && (
             <CircleMarker
               center={[user.cursor.lat, user.cursor.lng]}
@@ -37,7 +37,7 @@ const RemotePresenceLayer = () => {
             </CircleMarker>
           )}
 
-          {/* RITA VALD PUNKT (HIGHLIGHT) */}
+          {/* Draw selected point (highlight) */}
           {user.selectedPointId &&
             (() => {
               const point = competition.mapPoints.find(
@@ -48,10 +48,10 @@ const RemotePresenceLayer = () => {
               return (
                 <Circle
                   center={[point.lat, point.lng]}
-                  radius={45} // Något större än din vanliga kontrollcirkel
+                  radius={45}
                   pathOptions={{
                     color: user.color,
-                    dashArray: "5, 10", // Streckad linje för att se "aktiv" ut
+                    dashArray: "5, 10",
                     weight: 2,
                     fill: false,
                   }}
