@@ -1,6 +1,6 @@
 import L from "leaflet";
 import Competition from "./competition";
-import MapPoint from "./map-point";
+import MapPoint, { MapPointType } from "./map-point";
 import UIManager, { UIState } from "./ui-manager";
 import CompetitionManager from "./competition-manager";
 import { combineLatest, Subscription } from "rxjs";
@@ -23,9 +23,37 @@ function getPointOnEdge(center: L.LatLng, target: L.LatLng, radius: number) {
   return L.latLng(newLat, newLng);
 }
 
+function createStartTriangle(
+  mapPoint: MapPoint,
+  sizeMeters: number,
+  zoom: number
+): L.Polygon {
+  const h = sizeMeters * (Math.sqrt(3) / 2); // Höjden i en liksidig triangel
+  const center = L.latLng(mapPoint.lat, mapPoint.lng);
+
+  const p1 = L.latLng(center.lat + h / 2, center.lng);
+  const p2 = L.latLng(center.lat - h / 2, center.lng - sizeMeters / 2);
+  const p3 = L.latLng(center.lat - h / 2, center.lng + sizeMeters / 2);
+
+  const polygon = L.polygon([p1, p2, p3], {
+    color: COURSE_COLOR,
+    fill: true,
+    fillColor: COURSE_COLOR,
+    fillOpacity: 0,
+    weight: getLineWidth(zoom),
+    interactive: false,
+    draggable: true,
+  });
+
+  polygon.pointId = mapPoint.id;
+
+  return polygon;
+}
+
 class MapManager {
   private _map: L.Map;
   private _controlPointsLayer: L.LayerGroup;
+  private _startPointsLayer: L.LayerGroup;
   private _lineLayer: L.LayerGroup;
   private _activeCircle: L.Circle | null = null;
   private _subscriptions: Subscription[] = [];
@@ -33,6 +61,7 @@ class MapManager {
   constructor(map: L.Map) {
     this._map = map;
     this._controlPointsLayer = L.layerGroup().addTo(this._map);
+    this._startPointsLayer = L.layerGroup().addTo(this._map);
     this._lineLayer = L.layerGroup().addTo(this._map);
 
     this._map.on("zoomend", () => {
@@ -60,7 +89,10 @@ class MapManager {
   private _onMapClick(e: L.LeafletMouseEvent) {
     switch (UIManager.instance.uiStateSubject.value.inputMode) {
       case "ADD_CONTROL_POINT":
-        this._addControlPointAt(e);
+        this._addMapPointAt(e, "CONTROL");
+        break;
+      case "ADD_START_POINT":
+        this._addMapPointAt(e, "START");
         break;
       case "NONE":
         UIManager.instance.setCurrentMapPointId(null);
@@ -70,13 +102,14 @@ class MapManager {
     }
   }
 
-  private _addControlPointAt(e: L.LeafletMouseEvent) {
+  private _addMapPointAt(e: L.LeafletMouseEvent, type: MapPointType) {
     const mapPoint = new MapPoint({
       lat: e.latlng.lat,
       lng: e.latlng.lng,
+      type,
     });
 
-    CompetitionManager.instance.addControl({
+    CompetitionManager.instance.addMapPoint({
       mapPoint,
     });
 
@@ -85,12 +118,13 @@ class MapManager {
 
   private _onZoomEnd() {
     const currentZoom = this._map.getZoom();
+    const lineWidth = getLineWidth(currentZoom);
 
     // Update line widths
     this._lineLayer.eachLayer((layer) => {
       const line = layer as L.Polyline;
       line.setStyle({
-        weight: getLineWidth(currentZoom),
+        weight: lineWidth,
       });
     });
 
@@ -98,7 +132,15 @@ class MapManager {
     this._controlPointsLayer.eachLayer((layer) => {
       const circle = layer as L.Circle;
       circle.setStyle({
-        weight: getLineWidth(currentZoom),
+        weight: lineWidth,
+      });
+    });
+
+    // Update start point circle weights
+    this._startPointsLayer.eachLayer((layer) => {
+      const polygon = layer as L.Polygon;
+      polygon.setStyle({
+        weight: lineWidth,
       });
     });
 
@@ -174,6 +216,64 @@ class MapManager {
 
         line.lineId = dl.id;
         line.addTo(this._lineLayer);
+      }
+    });
+  }
+
+  private _updateStartPoints(startPoints: readonly MapPoint[]) {
+    const currentStartPoints =
+      this._startPointsLayer.getLayers() as L.Polygon[];
+
+    // 1. Remove startpoints that are no longer in startPoints
+    currentStartPoints.forEach((point: L.Polygon) => {
+      if (!startPoints.find((p) => p.id === point.pointId)) {
+        this._startPointsLayer.removeLayer(point);
+      }
+    });
+
+    // 2. Update or create startpoints for each startPoint
+    startPoints.forEach((point: MapPoint) => {
+      const existingPolygon = currentStartPoints.find((l) => {
+        return l.pointId === point.id;
+      });
+
+      const triangleSize = RING_RADIUS_METERS * 2;
+
+      if (existingPolygon) {
+        // Update position if it has changed
+        const currentPos = existingPolygon.getBounds().getCenter();
+        if (currentPos.lat !== point.lat || currentPos.lng !== point.lng) {
+        }
+      } else {
+        // Create a new triangle if it doesn't exist
+        const triangle = createStartTriangle(
+          point,
+          triangleSize,
+          this._map.getZoom()
+        );
+        triangle.addTo(this._startPointsLayer);
+
+        triangle.on("drag", () => {
+          this._updateLines(
+            UIManager.instance.uiStateSubject.value.currentCourseId
+          );
+          //UIManager.instance.setCurrentMapPointId(point.id);
+          this._updateActiveCircle(point.id);
+        });
+
+        triangle.on("dragend", (e: L.LeafletEvent) => {
+          const target = e.target as L.Polygon;
+          const newPos = target.getBounds().getCenter();
+
+          CompetitionManager.instance.updateMapPoint(
+            point.copy({ lat: newPos.lat, lng: newPos.lng })
+          );
+        });
+
+        triangle.on("click", (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e);
+          UIManager.instance.setCurrentMapPointId(point.id);
+        });
       }
     });
   }
@@ -291,7 +391,12 @@ class MapManager {
     competition: Competition;
     uiState: UIState;
   }) {
-    this._updateControlPoints(competition.mapPoints);
+    this._updateControlPoints(
+      competition.mapPoints.filter((mp) => mp.type === "CONTROL")
+    );
+    this._updateStartPoints(
+      competition.mapPoints.filter((mp) => mp.type === "START")
+    );
     this._updateLines(uiState.currentCourseId);
     this._updateActiveCircle(uiState.currentMapPointId);
   }

@@ -7,6 +7,12 @@ declare module "leaflet" {
   interface Circle {
     pointId?: string;
   }
+  interface Polygon {
+    pointId?: string;
+  }
+  interface PolylineOptions {
+    draggable?: boolean;
+  }
   interface CircleMarkerOptions {
     draggable?: boolean;
   }

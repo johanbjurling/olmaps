@@ -21,7 +21,7 @@ class CompetitionManager {
     return this._subject;
   }
 
-  addControl({ mapPoint }: { mapPoint: MapPoint }) {
+  addMapPoint({ mapPoint }: { mapPoint: MapPoint }) {
     this._subject.next(this._subject.value.addMapPoint(mapPoint));
   }
 
