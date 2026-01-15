@@ -1,4 +1,4 @@
-import UIManager from "./ui-manager";
+import UIManager from "../ui-manager";
 import { useBehaviorSubject } from "./useBehaviorSubject";
 
 export const useUIState = () => {

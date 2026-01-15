@@ -1,5 +1,5 @@
-import CompetitionManager from "./competition-manager";
-import UIManager from "./ui-manager";
+import CompetitionManager from "../CompetitionManager";
+import UIManager from "../ui-manager";
 import { useBehaviorSubject } from "./useBehaviorSubject";
 
 export const useCurrentMapPoint = () => {

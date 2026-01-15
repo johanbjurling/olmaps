@@ -1,4 +1,4 @@
-import CompetitionManager from "./competition-manager";
+import CompetitionManager from "../CompetitionManager";
 import { useBehaviorSubject } from "./useBehaviorSubject";
 
 export const useCompetition = () => {

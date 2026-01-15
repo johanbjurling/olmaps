@@ -1,5 +1,5 @@
 import UIManager from "./ui-manager";
-import { useBehaviorSubject } from "./useBehaviorSubject";
+import { useBehaviorSubject } from "./hooks/useBehaviorSubject";
 
 export const InputModeSelector = () => {
   const uiState = useBehaviorSubject(UIManager.instance.uiStateSubject);

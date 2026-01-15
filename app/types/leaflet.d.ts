@@ -22,4 +22,10 @@ declare module "leaflet" {
   interface Polyline {
     lineId?: string;
   }
+  interface CRS {
+    transformation: Transformation;
+    projection: {
+      bounds: Bounds;
+    };
+  }
 }

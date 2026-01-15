@@ -36,6 +36,15 @@ class MapPoint {
   }): MapPoint {
     return new MapPoint({ id: this.id, lat, lng, type: type ?? this.type });
   }
+
+  public toJSON() {
+    return {
+      id: this.id,
+      lat: this.lat,
+      lng: this.lng,
+      type: this.type,
+    };
+  }
 }
 
 export default MapPoint;

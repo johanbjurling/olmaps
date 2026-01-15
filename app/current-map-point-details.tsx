@@ -1,6 +1,6 @@
-import CompetitionManager from "./competition-manager";
+import CompetitionManager from "./CompetitionManager";
 import UIManager from "./ui-manager";
-import { useCurrentMapPoint } from "./useCurrentMapPoint";
+import { useCurrentMapPoint } from "./hooks/useCurrentMapPoint";
 
 export function CurrentMapPointDetails() {
   const currentMapPoint = useCurrentMapPoint();

@@ -2,7 +2,7 @@ import L from "leaflet";
 import Competition from "./competition";
 import MapPoint, { MapPointType } from "./map-point";
 import UIManager, { UIState } from "./ui-manager";
-import CompetitionManager from "./competition-manager";
+import CompetitionManager from "./CompetitionManager";
 import { combineLatest, Subscription } from "rxjs";
 
 const RING_RADIUS_METERS = 37.5;

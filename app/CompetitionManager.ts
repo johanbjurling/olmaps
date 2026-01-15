@@ -1,0 +1,107 @@
+import * as Y from "yjs";
+import { BehaviorSubject } from "rxjs";
+import MapPoint from "./map-point";
+import Competition from "./competition";
+import Course from "./course";
+import { IndexeddbPersistence } from "y-indexeddb";
+
+class CompetitionManager {
+  private _doc: Y.Doc;
+  private _yMapPoints: Y.Array<any>;
+  private _yCourses: Y.Array<any>;
+  private _undoManager: Y.UndoManager;
+  private static _instance: CompetitionManager;
+  private _subject: BehaviorSubject<Competition>;
+
+  constructor() {
+    this._doc = new Y.Doc();
+    this._yMapPoints = this._doc.getArray("mapPoints");
+    this._yCourses = this._doc.getArray("courses");
+
+    this._subject = new BehaviorSubject<Competition>(new Competition({}));
+
+    this._doc.on("update", () => {
+      this._syncYjsToRxJS();
+    });
+
+    this._undoManager = new Y.UndoManager([this._yMapPoints, this._yCourses]);
+    new IndexeddbPersistence("competition-name", this._doc);
+  }
+
+  public destroy() {
+    this._doc.destroy();
+  }
+
+  public static get instance(): CompetitionManager {
+    if (!CompetitionManager._instance) {
+      CompetitionManager._instance = new CompetitionManager();
+    }
+    return CompetitionManager._instance;
+  }
+
+  get subject(): BehaviorSubject<Competition> {
+    return this._subject;
+  }
+
+  newCourse() {
+    this._subject.next(this._subject.value.newCourse());
+  }
+
+  addMapPoint({ mapPoint }: { mapPoint: MapPoint }) {
+    const yPoint = new Y.Map();
+
+    // We populate the Y.Map with the properties of MapPoint
+    yPoint.set("id", mapPoint.id);
+    yPoint.set("lat", mapPoint.lat);
+    yPoint.set("lng", mapPoint.lng);
+    yPoint.set("type", mapPoint.type);
+
+    this._yMapPoints.push([yPoint]);
+  }
+
+  updateMapPoint(point: MapPoint) {
+    const points = this._yMapPoints.toArray();
+    const yPoint = points.find((p) => p.get("id") === point.id);
+
+    if (yPoint) {
+      this._doc.transact(() => {
+        if (yPoint.get("lat") !== point.lat) yPoint.set("lat", point.lat);
+        if (yPoint.get("lng") !== point.lng) yPoint.set("lng", point.lng);
+      });
+    }
+  }
+
+  deleteMapPoint(pointId: string) {
+    /*const updatedPoints = this._subject.value.mapPoints.filter(
+      (point) => point.id !== pointId
+    );
+    this._subject.next(this._subject.value.copy({ mapPoints: updatedPoints }));*/
+    const index = this._yMapPoints.toArray().findIndex((p) => p.id === pointId);
+    if (index !== -1) {
+      this._yMapPoints.delete(index);
+    }
+  }
+
+  undo() {
+    this._undoManager.undo();
+  }
+
+  redo() {
+    this._undoManager.redo();
+  }
+
+  private _syncYjsToRxJS() {
+    // Här konverterar vi tillbaka Yjs rådata till dina fina klasser
+    const mapPoints = this._yMapPoints.toArray().map((p) => new MapPoint(p));
+    const courses = this._yCourses.toArray().map((c) => new Course(c));
+
+    const updatedCompetition = new Competition({
+      mapPoints,
+      courses,
+    });
+
+    this._subject.next(updatedCompetition);
+  }
+}
+
+export default CompetitionManager;

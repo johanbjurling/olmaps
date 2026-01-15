@@ -1,7 +1,7 @@
-import CompetitionManager from "./competition-manager";
+import CompetitionManager from "./CompetitionManager";
 import UIManager from "./ui-manager";
-import { useCompetition } from "./useCompetition";
-import { useUIState } from "./useUIState";
+import { useCompetition } from "./hooks/useCompetition";
+import { useUIState } from "./hooks/useUIState";
 
 export function CourseEditor() {
   const competition = useCompetition();
