@@ -257,7 +257,7 @@ class MapManager {
           this._updateLines(
             UIManager.instance.uiStateSubject.value.currentCourseId
           );
-          //UIManager.instance.setCurrentMapPointId(point.id);
+          UIManager.instance.setCurrentMapPointId(point.id);
           this._updateActiveCircle(point.id);
         });
 

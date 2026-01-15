@@ -1,5 +1,7 @@
 "use client";
 
+import Course from "./course";
+import { CourseEditor } from "./course-editor";
 import { CurrentMapPointDetails } from "./current-map-point-details";
 import { InputModeSelector } from "./input-mode-selector";
 import MapLayer from "./map-layer";
@@ -15,6 +17,7 @@ export default function Home() {
       </div>
       <div id="right-pane" className="absolute right-0 w-[20%] h-full">
         <CurrentMapPointDetails />
+        <CourseEditor />
       </div>
     </div>
   );

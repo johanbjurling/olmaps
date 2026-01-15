@@ -18,6 +18,12 @@ export function CurrentMapPointDetails() {
       <p>
         <strong>Type:</strong> {currentMapPoint.type}
       </p>
+      <p>
+        <strong>Latitude:</strong> {currentMapPoint.lat.toFixed(6)}
+      </p>
+      <p>
+        <strong>Longitude:</strong> {currentMapPoint.lng.toFixed(6)}
+      </p>
       <button
         className="mt-4 p-2 bg-red-500 text-white rounded"
         onClick={() => {
@@ -29,12 +35,6 @@ export function CurrentMapPointDetails() {
       >
         Delete
       </button>
-      <p>
-        <strong>Latitude:</strong> {currentMapPoint.lat.toFixed(6)}
-      </p>
-      <p>
-        <strong>Longitude:</strong> {currentMapPoint.lng.toFixed(6)}
-      </p>
     </div>
   );
 }

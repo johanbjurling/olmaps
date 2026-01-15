@@ -40,6 +40,12 @@ class Competition {
     return this.copy({ mapPoints: [...this.mapPoints, mapPoint] });
   }
 
+  public newCourse(): Competition {
+    return this.copy({
+      courses: [...this.courses, new Course({ pointIds: [] })],
+    });
+  }
+
   public updateMapPoint(updatedPoint: MapPoint): Competition {
     const updatedPoints = this.mapPoints.map((point) =>
       point.id === updatedPoint.id ? updatedPoint : point
