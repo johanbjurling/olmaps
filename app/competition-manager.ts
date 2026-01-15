@@ -28,6 +28,13 @@ class CompetitionManager {
   updateMapPoint(point: MapPoint) {
     this._subject.next(this._subject.value.updateMapPoint(point));
   }
+
+  deleteMapPoint(pointId: string) {
+    const updatedPoints = this._subject.value.mapPoints.filter(
+      (point) => point.id !== pointId
+    );
+    this._subject.next(this._subject.value.copy({ mapPoints: updatedPoints }));
+  }
 }
 
 export default CompetitionManager;

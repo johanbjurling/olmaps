@@ -1,5 +1,7 @@
 "use client";
 
+import Competition from "./competition";
+import CompetitionManager from "./competition-manager";
 import { InputModeSelector } from "./input-mode-selector";
 import MapLayer from "./map-layer";
 import UIManager from "./ui-manager";
@@ -23,6 +25,17 @@ export default function Home() {
             <p>
               <strong>ID:</strong> {uiState.currentMapPointId}
             </p>
+            <button
+              className="mt-4 p-2 bg-red-500 text-white rounded"
+              onClick={() => {
+                CompetitionManager.instance.deleteMapPoint(
+                  uiState.currentMapPointId
+                );
+                UIManager.instance.setCurrentMapPointId(null);
+              }}
+            >
+              Delete
+            </button>
             {/*/<p>
               <strong>Latitude:</strong> {currentMapPoint.lat.toFixed(6)}
             </p>
