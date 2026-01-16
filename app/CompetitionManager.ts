@@ -59,14 +59,23 @@ class CompetitionManager {
     this._yMapPoints.push([yPoint]);
   }
 
-  updateMapPoint(point: MapPoint) {
-    const points = this._yMapPoints.toArray();
-    const yPoint = points.find((p) => p.get("id") === point.id);
+  updateMapPointCoordinates({
+    pointId,
+    lat,
+    lng,
+  }: {
+    pointId: string;
+    lat: number;
+    lng: number;
+  }) {
+    const yPoint = this._yMapPoints
+      .toArray()
+      .find((p) => p.get("id") === pointId);
 
     if (yPoint) {
       this._doc.transact(() => {
-        if (yPoint.get("lat") !== point.lat) yPoint.set("lat", point.lat);
-        if (yPoint.get("lng") !== point.lng) yPoint.set("lng", point.lng);
+        if (yPoint.get("lat") !== lat) yPoint.set("lat", lat);
+        if (yPoint.get("lng") !== lng) yPoint.set("lng", lng);
       });
     }
   }

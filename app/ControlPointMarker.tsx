@@ -2,21 +2,26 @@ import { useEffect, useRef } from "react";
 import { Circle } from "react-leaflet";
 import L from "leaflet";
 import CompetitionManager from "./CompetitionManager";
-import { COURSE_COLOR, RING_RADIUS_METERS } from "./constants";
+import {
+  COURSE_COLOR,
+  LINE_WIDTH_ZOOM_MULTIPLIER,
+  RING_RADIUS_METERS,
+} from "./constants";
+import React from "react";
 
-export const ControlPointMarker = ({ point }: { point: any }) => {
+const ControlPoint = ({ point, zoom }: { point: any; zoom: number }) => {
   const circleRef = useRef<L.Circle>(null);
 
   useEffect(() => {
     const circle = circleRef.current;
     if (!circle) return;
 
-    circle.on("dragend", (e) => {
+    circle.on("dragend", () => {
       const newPos = circle.getLatLng();
 
       // Uppdatera Yjs via din manager
-      CompetitionManager.instance.updateMapPoint({
-        ...point,
+      CompetitionManager.instance.updateMapPointCoordinates({
+        pointId: point.id,
         lat: newPos.lat,
         lng: newPos.lng,
       });
@@ -34,7 +39,7 @@ export const ControlPointMarker = ({ point }: { point: any }) => {
       radius={RING_RADIUS_METERS}
       pathOptions={{
         color: COURSE_COLOR,
-        weight: 3,
+        weight: zoom * LINE_WIDTH_ZOOM_MULTIPLIER + 1,
         fill: true,
         fillColor: "white",
         fillOpacity: 0,
@@ -44,3 +49,14 @@ export const ControlPointMarker = ({ point }: { point: any }) => {
     />
   );
 };
+
+export const ControlPointMarker = React.memo(
+  ControlPoint,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.point.lat === nextProps.point.lat &&
+      prevProps.point.lng === nextProps.point.lng &&
+      prevProps.zoom === nextProps.zoom
+    );
+  }
+);
