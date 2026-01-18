@@ -8,18 +8,44 @@ import {
   RING_RADIUS_METERS,
 } from "./constants";
 import React from "react";
+import PresenceManager from "./PresenceManager";
+import { usePresence } from "./hooks/usePresence";
 
 const ControlPoint = ({ point, zoom }: { point: any; zoom: number }) => {
   const circleRef = useRef<L.Circle>(null);
+  const presences = usePresence();
+  const isBeingDragged = presences.some(
+    (u) => u.draggingPoint?.id === point.id
+  );
 
   useEffect(() => {
     const circle = circleRef.current;
     if (!circle) return;
 
+    circle.on("dragstart", () => {
+      PresenceManager.instance.updateDraggingPoint({
+        id: point.id,
+        lat: point.lat,
+        lng: point.lng,
+      });
+    });
+
+    circle.on("drag", () => {
+      const pos = circle.getLatLng();
+      PresenceManager.instance.updateDraggingPoint({
+        id: point.id,
+        lat: pos.lat,
+        lng: pos.lng,
+      });
+    });
+
     circle.on("dragend", () => {
       const newPos = circle.getLatLng();
 
-      // Uppdatera Yjs via din manager
+      // 1. Clear dragging-state
+      PresenceManager.instance.updateDraggingPoint(null);
+
+      // 2. Save permanent position
       CompetitionManager.instance.updateMapPointCoordinates({
         pointId: point.id,
         lat: newPos.lat,
@@ -28,9 +54,9 @@ const ControlPoint = ({ point, zoom }: { point: any; zoom: number }) => {
     });
 
     return () => {
-      circle.off("dragend");
+      circle.off("dragstart drag dragend");
     };
-  }, [point]);
+  }, [point.id, point.lat, point.lng]);
 
   return (
     <Circle
@@ -43,6 +69,7 @@ const ControlPoint = ({ point, zoom }: { point: any; zoom: number }) => {
         fill: true,
         fillColor: "white",
         fillOpacity: 0,
+        opacity: isBeingDragged ? 0 : 1,
       }}
       interactive={true}
       draggable={true}

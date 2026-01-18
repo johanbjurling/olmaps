@@ -48,7 +48,7 @@ function MapViewContent({
     <>
       <TileLayer url="tiles/{z}/{x}/{y}.png" tms={true} bounds={mapBounds} />
       <MapPointsLayer zoom={zoom} />
-      <RemotePresenceLayer />
+      <RemotePresenceLayer zoom={zoom} />
     </>
   );
 }

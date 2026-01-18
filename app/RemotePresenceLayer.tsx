@@ -2,8 +2,13 @@ import React from "react";
 import { CircleMarker, Tooltip, Circle } from "react-leaflet";
 import { usePresence } from "./hooks/usePresence";
 import { useCompetition } from "./hooks/useCompetition";
+import {
+  COURSE_COLOR,
+  LINE_WIDTH_ZOOM_MULTIPLIER,
+  RING_RADIUS_METERS,
+} from "./constants";
 
-const RemotePresenceLayer = () => {
+const RemotePresenceLayer = ({ zoom }: { zoom: number }) => {
   const presences = usePresence();
   const competition = useCompetition();
 
@@ -35,6 +40,21 @@ const RemotePresenceLayer = () => {
                 </span>
               </Tooltip>
             </CircleMarker>
+          )}
+
+          {user.draggingPoint && (
+            <Circle
+              center={[user.draggingPoint.lat, user.draggingPoint.lng]}
+              radius={RING_RADIUS_METERS}
+              pathOptions={{
+                color: COURSE_COLOR,
+                weight: zoom * LINE_WIDTH_ZOOM_MULTIPLIER + 1,
+                fill: true,
+                fillColor: user.color,
+                fillOpacity: 0,
+              }}
+              interactive={false}
+            />
           )}
 
           {/* Draw selected point (highlight) */}

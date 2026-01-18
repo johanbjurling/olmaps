@@ -9,6 +9,7 @@ export interface UserPresence {
   color: string;
   cursor?: { lat: number; lng: number };
   selectedPointId?: string | null;
+  draggingPoint?: { id: string; lat: number; lng: number } | null;
 }
 
 class PresenceManager {
@@ -52,6 +53,7 @@ class PresenceManager {
           color: state.user.color,
           cursor: state.cursor,
           selectedPointId: state.selectedPointId,
+          draggingPoint: state.draggingPoint,
         };
       });
 
@@ -63,6 +65,12 @@ class PresenceManager {
 
   public updateSelection(pointId: string | null) {
     this._awareness.setLocalStateField("selectedPointId", pointId);
+  }
+
+  public updateDraggingPoint(
+    data: { id: string; lat: number; lng: number } | null
+  ) {
+    this._awareness.setLocalStateField("draggingPoint", data);
   }
 
   public get subject() {
