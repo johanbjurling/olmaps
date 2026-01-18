@@ -24,3 +24,12 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+.hide-cursor,
+.hide-cursor * {
+  cursor: none !important;
+}
+
+.drag-crosshair {
+  stroke: black;
+  stroke-width: 2;
+}

@@ -1,5 +1,5 @@
 import React from "react";
-import { CircleMarker, Tooltip, Circle } from "react-leaflet";
+import { CircleMarker, Tooltip, Circle, Marker } from "react-leaflet";
 import { usePresence } from "./hooks/usePresence";
 import { useCompetition } from "./hooks/useCompetition";
 import {
@@ -7,6 +7,7 @@ import {
   LINE_WIDTH_ZOOM_MULTIPLIER,
   RING_RADIUS_METERS,
 } from "./constants";
+import L from "leaflet";
 
 const RemotePresenceLayer = ({ zoom }: { zoom: number }) => {
   const presences = usePresence();
