@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import CompetitionManager from "../CompetitionManager";
+import SelectionService from "../SelectionService";
 
 export const useKeyboardShortcuts = (selectedPointId: string | null) => {
   useEffect(() => {
@@ -27,12 +28,12 @@ export const useKeyboardShortcuts = (selectedPointId: string | null) => {
       }
 
       // DELETE: Delete or Backspace
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedPointId) {
+      if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
-        if (
-          window.confirm("Do you want to delete the selected control point?")
-        ) {
-          CompetitionManager.instance.deleteMapPoint(selectedPointId);
+        const idToDelete = SelectionService.instance.currentId;
+        if (idToDelete) {
+          CompetitionManager.instance.deleteMapPoint(idToDelete);
+          SelectionService.instance.select(null);
         }
       }
     };

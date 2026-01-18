@@ -1,5 +1,6 @@
-import { useCompetition } from "./hooks/useCompetition";
 import { ControlPointMarker } from "./ControlPointMarker";
+import { useCompetition } from "./hooks/useCompetition";
+import { StartPointMarker } from "./StartPointMarker";
 
 const MapPointsLayer = ({ zoom }: { zoom: number }) => {
   const competition = useCompetition();
