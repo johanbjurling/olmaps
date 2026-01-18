@@ -11,6 +11,7 @@ import { useState } from "react";
 import CompetitionManager from "./CompetitionManager";
 import MapPoint from "./map-point";
 import PresenceManager from "./PresenceManager";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 
 function MapViewContent({
   minZoom,
@@ -20,6 +21,7 @@ function MapViewContent({
   mapBounds: L.LatLngBoundsExpression;
 }) {
   const [zoom, setZoom] = useState(minZoom);
+  useKeyboardShortcuts(null);
 
   const map = useMapEvents({
     zoomend: () => {

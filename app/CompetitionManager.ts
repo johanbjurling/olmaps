@@ -5,6 +5,7 @@ import Competition from "./competition";
 import Course from "./course";
 import { IndexeddbPersistence } from "y-indexeddb";
 import WebRTCManager from "./WebRTCManager";
+import PresenceManager from "./PresenceManager";
 
 class CompetitionManager {
   private _doc: Y.Doc = WebRTCManager.instance.doc;
@@ -80,14 +81,14 @@ class CompetitionManager {
     }
   }
 
-  deleteMapPoint(pointId: string) {
-    /*const updatedPoints = this._subject.value.mapPoints.filter(
-      (point) => point.id !== pointId
-    );
-    this._subject.next(this._subject.value.copy({ mapPoints: updatedPoints }));*/
-    const index = this._yMapPoints.toArray().findIndex((p) => p.id === pointId);
+  public deleteMapPoint(id: string) {
+    const index = this._yMapPoints
+      .toArray()
+      .findIndex((p) => p.get("id") === id);
+
     if (index !== -1) {
       this._yMapPoints.delete(index);
+      PresenceManager.instance.updateSelection(null);
     }
   }
 
